@@ -73,7 +73,7 @@ def renameFiles(path: str, numDigits: int) -> None:
     for f in os.listdir(path):
         source = join(path, f)
         if not isfile(source):
-            print(f"- Skipping: {source} - not a file.s")
+            print(f"- Skipping: {source} - not a file.")
             continue
         if not (newName := getNewFilename(f, numDigits)):
             print(f"- Skipping file {source} - doesn't match pattern.")
