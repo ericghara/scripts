@@ -74,8 +74,7 @@ def renameFiles(path: str, numDigits: int) -> None:
         source = join(path, f)
         if not isfile(source):
             print(f"- Skipping: {source} - not a file.")
-            continue
-        if not (newName := getNewFilename(f, numDigits)):
+        elif not (newName := getNewFilename(f, numDigits)):
             print(f"- Skipping file {source} - doesn't match pattern.")
         else:
             dest = join(path, newName)
