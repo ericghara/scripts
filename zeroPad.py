@@ -1,10 +1,9 @@
-import os
 import math
+import os
 import re
 import sys
-
-from typing import *
 from os.path import isfile, join, isdir
+from typing import *
 
 """
 This script renames FILES which begin with a numeric character and have a following space to 0 padded filenames (i.e. "1 filename.pdf" -> "01 filename.pdf")
