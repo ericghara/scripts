@@ -40,33 +40,29 @@ class unChown:
             self.log_file.close()
             self.log_file = None
 
-    def _shouldChown(self, path: str) -> bool:
+    def _shouldChown(self, stat: os.stat_result) -> bool:
         """
         Decide if file or folder should be chowned.
-        :param path: path
+        :param stat: stat_result of the file/dir
         :return: True if should be unChown-ed else False
         """
-        try:
-            stat = os.lstat(path)
-            return stat.st_ctime >= self.ctime_cutoff and stat.st_gid != stat.st_uid and stat.st_uid == self.bad_uid
-        except Exception as e:
-            self.logger.warning(f"{path} {str(e)}")
-        return False
+        return stat.st_ctime >= self.ctime_cutoff and stat.st_gid != stat.st_uid and stat.st_uid == self.bad_uid
 
-    def _doChown(self, path: str, dry_run: bool) -> None:
+    def _doChown(self, path: str, stat: os.stat_result, dry_run: bool) -> bool:
         """
         Chown the file at ```path``` to owner = gid, group = gid
         :param path: path
+        :param stat: stat_result for the path
         :param dry_run: True don't actually modify file. False, do modify file.
-        :return:
+        :return: ```True``` if a chown was performed, else ```False```
         """
-        try:
-            stat = os.lstat(path)
-            if not dry_run:
+        if not dry_run:
+            try:
                 os.chown(path=path, uid=stat.st_gid, gid=stat.st_gid, follow_symlinks=False)
-            self._doLog(path=path, uid=stat.st_uid, gid=stat.st_gid)
-        except Exception as e:
-            self.logger.warning("Couldn't chown: " + str(e))
+            except Exception as e:
+                self.logger.warning("Couldn't chown: " + str(e))
+                return False
+        return True
 
     def _doLog(self, path: str, uid: int, gid: int) -> None:
         """
@@ -81,23 +77,39 @@ class unChown:
         if self.log_file:
             self.log_file.write(f'{log_line}\n')
 
-    def run(self, root_path: str, dry_run=False) -> None:
-        chown_handler = lambda path: self._doChown(path=path, dry_run=dry_run)
+    def _handlePath(self, path: str, dry_run=False) -> bool:
+        """
+        :param path: path to filesystem object
+        :param dry_run:
+        :return:
+        """
+        try:
+            stat = os.lstat(path)
+        except Exception as e:
+            self.logger.warning(f"Unable to stat: {path}: {str(e)}")
+            return False
+        if self._shouldChown(stat) and self._doChown(path=path, stat=stat, dry_run=dry_run):
+            self._doLog(path=path, uid=stat.st_uid, gid=stat.st_gid)
+            return True
+        return False
 
+    def run(self, root_path: str, dry_run: bool = False) -> None:
+        """
+        :param root_path: path to start filesystem walk from
+        :param dry_run: if ```True``` no changes will be made to file permissions, a log may be created *see:*
+        constructor for more info
+        :return:
+        """
         for dir_path, dir_names, file_names in os.walk(top=root_path, topdown=True, followlinks=False):
-            if self._shouldChown(dir_path):
-                chown_handler(dir_path)
+            self._handlePath(path=dir_path, dry_run=dry_run)
             for file_name in file_names:
                 file_path = join(dir_path, file_name)
-                if self._shouldChown(file_path):
-                    chown_handler(file_path)
+                self._handlePath(path=file_path, dry_run=dry_run)
 
 
 # [ROOT_DIR] {optional: --dry-run}
 def parseArgs() -> List[str | bool]:
     args = sys.argv[1:]
-    if len(args) < 1:
-        raise ValueError("Expected at least 1 arg: root path")
     if len(args) == 1:
         args.append(False)
     elif len(args) == 2 and args[1].lower() == "--dry-run":  # dry-run == no changes to disk
@@ -112,7 +124,7 @@ if __name__ == "__main__":
 
     root_path, dry_run = parseArgs()  # location to start walk form
     log_path = f"log-{int(round(time.time(), 0))}"  # path to write log file
-    ctime_cutoff = 1680734730 - 30  # only files/dirs with ctimes AT or AFTER this can be modified
+    ctime_cutoff = 1680734730 - 30  # only files/dirs with ctimes AT or AFTER this will be modified
     bad_uid = 1_000  # owner uid which should be changed
 
     with unChown(bad_uid=bad_uid, ctime_cutoff=ctime_cutoff, log_path=log_path) as chown:
