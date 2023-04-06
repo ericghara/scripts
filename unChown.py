@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import logging
 import os
 import sys
@@ -92,7 +94,7 @@ class unChown:
 
 
 # [ROOT_DIR] {optional: --dry-run}
-def parseArgs() -> List[str, bool]:
+def parseArgs() -> List[str | bool]:
     args = sys.argv[1:]
     if len(args) < 1:
         raise ValueError("Expected at least 1 arg: root path")
