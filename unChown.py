@@ -10,7 +10,7 @@ from typing import *
 
 class unChown:
     """
-    This is a script to undo an errant chown of ONlY owner.  The *imperfect* logic is that files and folders
+    This is a script to undo an errant chown of ONLY owner.  The *imperfect* logic is that files and folders
     where owner uid != group gid should be modified to owner = gid, group = gid.  The script also looks at
     file stat info and only changes files where the ctime is after a certain threshold (i.e. when the chown mistake
     was made)
