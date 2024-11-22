@@ -2,6 +2,7 @@
 Scripts which may be useful again someday...
 
 * **fetchAndRunP95.sh**: fetch, install dependency, and run prime95
+* **install_kernel.py**: installer of new kernel images and manager for old kernel images
 * **mergePdf.sh**: merge all pdf files in a directory, where the merge order is lexicographical
 * **unChown.py**: fix file ownership where file's owner uid is not equal to its group gid
 * **isLuksHeader.bash**: recursively serach for LUKs encryption headers on disk
