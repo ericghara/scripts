@@ -3,19 +3,36 @@
 from pathlib import Path
 import re
 import shutil
+import argparse
  
-WHERE_KERNEL_IS = '/boot'
-WHERE_KERNEL_SHOULD_GO = '/boot/EFI/Gentoo'
+SOURCE_PATH = '/boot'
+DEST_PATH = '/boot/EFI/Gentoo'
 KERNEL_SOURCES = '/usr/src'
-OLD_KERNELS_SHOULD_GO = '/boot/EFI/Gentoo/old'
+OLD_KERNELS_PATH = '/boot/EFI/Gentoo/old'
 # newest n kernels should stay where kernel should go, older ones should go to old kernels
 num_new = 3 
 
-if __name__ == '__main__':                                                                                                                                             
-    src_dir = Path(WHERE_KERNEL_IS)
-    dest_dir = Path(WHERE_KERNEL_SHOULD_GO)
+if __name__ == '__main__':
+    
+    src_dir = Path(SOURCE_PATH)
+    dest_dir = Path(DEST_PATH)
     kernel_src_dir = Path(KERNEL_SOURCES)
-    old_kernel_dir = Path(OLD_KERNELS_SHOULD_GO)
+    old_kernel_dir = Path(OLD_KERNELS_PATH)
+
+    parser = argparse.ArgumentParser(prog="Install Kernel", description="Kernel installer and manager")
+    parser.add_argument('-a', '--all', type=bool, default=False, help="clean and install")
+    parser.add_argument('-c', '--clean', type=bool, default=False, help="clean, excess images to old kernels")
+    parser.add_argument('-i', '--install', type=bool, default=False, help="move kernel to /boot/EFI/Gentoo")
+
+    args = parser.parse_args()
+
+    if args.clean or args.install: 
+        if args.all:
+            print("Cannot mix -a (all) with -c (clean) or -i (install)")
+            exit(-1)
+    if args.all:
+        args.clean = True
+        args.install = True
 
     version_grabber = re.compile(r'(\d+\.\d+\.\d+-gentoo(-r\d)?)(\.\w{3})?$')
  
@@ -68,7 +85,9 @@ if __name__ == '__main__':
             for f in m.files:
                 print(f"* moving {f.name} to {old_kernel_dir}")
                 f.rename(old_kernel_dir.joinpath(f.name))
-                
-    move_new_kernels()
-    intern_old_kernels()
+    
+    if args.install:
+        move_new_kernels()
+    if args.clean:
+        intern_old_kernels()
 
